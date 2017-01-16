@@ -6,6 +6,8 @@
 #include <SPI.h>
 #include <SD.h>
 #include "DHT.h"
+#include <OneWire.h>
+#include <DallasTemperature.h>
 
 #define DHTTYPE DHT11   // DHT 11
 #define DHTPIN 2     // what digital pin we're connected to
@@ -13,6 +15,16 @@ DHT dht(DHTPIN, DHTTYPE);
 
 #define BACKLIGHT 3
 #define TFTSWITCH 6
+
+#define ONE_WIRE_BUS 7
+// Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
+OneWire oneWire(ONE_WIRE_BUS);
+
+// Pass our oneWire reference to Dallas Temperature. 
+DallasTemperature sensors(&oneWire);
+
+// arrays to hold device address
+DeviceAddress insideThermometer;
 
 // For the breakout, you can use any 2 or 3 pins
 // These pins will also work for the 1.8" TFT shield
@@ -47,6 +59,7 @@ void setup(void) {
   pinMode(BACKLIGHT, OUTPUT);
   digitalWrite(TFTSWITCH, LOW);
   digitalWrite(BACKLIGHT, LOW);   
+  initInternalTempSensor();
   
  // dht.begin();
 //  initSd();
@@ -56,6 +69,27 @@ void setup(void) {
 
 
  
+}
+
+void initInternalTempSensor(){
+
+  // locate devices on the bus
+  Serial.print("Locating devices...");
+  sensors.begin();
+  Serial.print("Found ");
+  Serial.print(sensors.getDeviceCount(), DEC);
+  Serial.println(" devices.");
+   if (!sensors.getAddress(insideThermometer, 0)) Serial.println("Unable to find address for Device 0");
+  Serial.print("Device 0 Address: ");
+  printAddress(insideThermometer);
+  Serial.println();
+
+  // set the resolution to 9 bit (Each Dallas/Maxim device is capable of several different resolutions)
+  sensors.setResolution(insideThermometer, 9);
+ 
+  Serial.print("Device 0 Resolution: ");
+  Serial.print(sensors.getResolution(insideThermometer), DEC); 
+  Serial.println();
 }
 
 
@@ -69,23 +103,15 @@ void display(){
   tft.fillScreen(ST7735_BLACK);
   digitalWrite(BACKLIGHT, HIGH); 
 
-
   drawFrame();
   drawTemp();
   
-
- 
-  delay(6000);
-  digitalWrite(BACKLIGHT, LOW);     
-  digitalWrite(TFTSWITCH, LOW);
-
 }
 
 void loop() {
-  
- 
+   
   display();
-  delay(20000);
+  delay(2000);
 
   // let's sleep 15 minutes
   /*
@@ -112,6 +138,7 @@ void drawFrame(){
     }
     
 
+    // check min/max
     if (ht[0]>maxHum){
         maxHum=ht[0];
     }
@@ -141,7 +168,7 @@ void drawFrame(){
     // y axis
     tft.drawLine(Y_AXIS_XPOS, X_AXIS_YPOS, Y_AXIS_XPOS, 32, ST7735_BLUE);
     
-    // test some text for fun here
+   
     
     // Temperature section
     tft.setCursor(8,110);
@@ -178,6 +205,7 @@ void drawFrame(){
 
 uint8_t xoffset=0;
 uint8_t temps[96];
+uint8_t itemps[96];
 void drawTemp(){
   if (xoffset++>=96){
       for (int i=0;i<96;i++){
@@ -191,7 +219,9 @@ void drawTemp(){
   for (int i=0;i<=xoffset;i++){
 //     tft.drawPixel(Y_AXIS_XPOS+i,X_AXIS_YPOS-temps[i]*2, ST7735_MAGENTA);
      tft.drawLine(Y_AXIS_XPOS+i, X_AXIS_YPOS-1, Y_AXIS_XPOS+i,X_AXIS_YPOS-(int)temps[i]*2, ST7735_MAGENTA);
-     delay(20);
+     delay(10);
+     tft.drawLine(Y_AXIS_XPOS+i, X_AXIS_YPOS-1, Y_AXIS_XPOS+i,X_AXIS_YPOS-(int)temps[i]*2, ST7735_MAGENTA);
+     
   }
   tft.setCursor(24,10);
   tft.setTextColor(0x5555);
@@ -229,7 +259,15 @@ int hum_temp(){
 
 
 
+// function to print the temperature for a device
+void printTemperature(DeviceAddress deviceAddress)
+{
 
+  float tempC = sensors.getTempC(deviceAddress);
+  Serial.print("Temp C: ");
+  Serial.print(tempC);
+ 
+}
 
 
 
@@ -318,6 +356,16 @@ long readVcc() {
 
   result = 1125300L / result; // Calculate Vcc (in mV); 1125300 = 1.1*1023*1000
   return result; // Vcc in millivolts
+}
+
+// function to print a device address
+void printAddress(DeviceAddress deviceAddress)
+{
+  for (uint8_t i = 0; i < 8; i++)
+  {
+    if (deviceAddress[i] < 16) Serial.print("0");
+    Serial.print(deviceAddress[i], HEX);
+  }
 }
 
 
