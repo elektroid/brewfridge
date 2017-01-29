@@ -1,6 +1,3 @@
-#include <LowPower.h>
-
-
 #include <Adafruit_GFX.h>    // Core graphics library
 #include <Adafruit_ST7735.h> // Hardware-specific library
 #include <SPI.h>
@@ -15,6 +12,7 @@ DHT dht(DHTPIN, DHTTYPE);
 
 #define BACKLIGHT 3
 #define TFTSWITCH 6
+#define FRIDGE A0
 
 #define ONE_WIRE_BUS 7
 // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
@@ -46,6 +44,8 @@ Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS,  TFT_DC, TFT_RST);
 //Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCLK, TFT_RST);
 
 
+#define FRIDGE_DELAY 600000 //10 minutes in ms
+bool fridgeOkToGo = true;
 
 File root;
 int ht[2];
@@ -55,23 +55,24 @@ void setup(void) {
   Serial.begin(9600);
   //Let's make it more random
   randomSeed(analogRead(0));
+  pinMode(FRIDGE, OUTPUT);
+  digitalWrite(FRIDGE, LOW);
+  
   pinMode(TFTSWITCH, OUTPUT);
   pinMode(BACKLIGHT, OUTPUT);
   digitalWrite(TFTSWITCH, LOW);
   digitalWrite(BACKLIGHT, LOW);   
   initInternalTempSensor();
   
- // dht.begin();
+  dht.begin();
 //  initSd();
 //  root = SD.open("/");
 //  printDirectory(root, 0);
   //gfx();
-
-
  
 }
 
-void initInternalTempSensor(){
+bool initInternalTempSensor(){
 
   // locate devices on the bus
   Serial.print("Locating devices...");
@@ -79,7 +80,10 @@ void initInternalTempSensor(){
   Serial.print("Found ");
   Serial.print(sensors.getDeviceCount(), DEC);
   Serial.println(" devices.");
-   if (!sensors.getAddress(insideThermometer, 0)) Serial.println("Unable to find address for Device 0");
+   if (!sensors.getAddress(insideThermometer, 0)){
+    Serial.println("Unable to find address for Device 0");
+    return false;
+   }
   Serial.print("Device 0 Address: ");
   printAddress(insideThermometer);
   Serial.println();
@@ -90,6 +94,7 @@ void initInternalTempSensor(){
   Serial.print("Device 0 Resolution: ");
   Serial.print(sensors.getResolution(insideThermometer), DEC); 
   Serial.println();
+  return true;
 }
 
 
@@ -113,12 +118,6 @@ void loop() {
   display();
   delay(2000);
 
-  // let's sleep 15 minutes
-  /*
-  for (int i=0;i<15*60/8;i++){
-    LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF); 
-  }
-  */
   
 }
 
