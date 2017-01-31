@@ -6,7 +6,7 @@
 #include <DallasTemperature.h>
 
 
-float targetTemp = 18.0;
+#define TARGET_TEMPERATURE 18.0
 
 void setup(void) {
   Serial.begin(9600);
@@ -16,7 +16,7 @@ void setup(void) {
   setup_fridge();
   setup_temp();
   setup_tft();
-  setup_log();
+ // setup_log();
 
 }
 
@@ -25,10 +25,10 @@ void setup(void) {
 void loop() {
 
   read_temps();
- // handle_fridge( targetTemp,  getCurrentInternalTemp());
+  handle_fridge( TARGET_TEMPERATURE,  getCurrentInternalTemp());
 
   display();
-  delay(100);
+  delay(1000);
 }
 
 

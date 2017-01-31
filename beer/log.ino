@@ -2,7 +2,7 @@
 #include <SPI.h>
 #include <SD.h>
 
-File root;
+
 
 #define SD_CS    4  // Chip select line for SD card
 

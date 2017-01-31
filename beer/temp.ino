@@ -18,12 +18,16 @@ DallasTemperature sensors(&oneWire);
 // arrays to hold device address
 DeviceAddress insideThermometer;
 
-int ht[2];
+int currentExternalTemp;
 float currentInternalTemp = 0.0;
 
 
 float getCurrentInternalTemp() {
   return currentInternalTemp;
+}
+
+int getCurrentExternalTemp() {
+  return currentExternalTemp;
 }
 
 bool setup_temp() {
@@ -58,13 +62,31 @@ void read_temps() {
   read_internal_temp(insideThermometer);
 }
 
+float maxTemp = -1;
+float minTemp = 99;
 
 // function to print the temperature for a device
 void read_internal_temp(DeviceAddress deviceAddress)
 {
-  currentInternalTemp = sensors.getTempC(deviceAddress);
-  Serial.print("Temp C: ");
-  Serial.print(currentInternalTemp);
+  // call sensors.requestTemperatures() to issue a global temperature
+  // request to all devices on the bus
+  Serial.print("Requesting temperatures...");
+  sensors.requestTemperatures(); // Send the command to get temperatures
+  Serial.println("DONE");
+  // After we got the temperatures, we can print them here.
+  // We use the function ByIndex, and as an example get the temperature from the first sensor only.
+  Serial.print("Temperature for the device 1 (index 0) is: ");
+  currentInternalTemp = sensors.getTempCByIndex(0);
+  Serial.println(currentInternalTemp);
+
+
+  if (getCurrentInternalTemp() > maxTemp) {
+    maxTemp = getCurrentInternalTemp();
+  }
+  if (getCurrentInternalTemp() < minTemp) {
+    minTemp = getCurrentInternalTemp();
+  }
+
 }
 
 
@@ -84,22 +106,22 @@ int external_hum_temp() {
   // Reading temperature or humidity takes about 250 milliseconds!
   // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
 
-  ht[0] = (int)dht.readHumidity();
+  //ht[0] = (int)dht.readHumidity();
   // Read temperature as Celsius (the default)
-  ht[1] = (int)dht.readTemperature();
+  currentExternalTemp = (int)dht.readTemperature();
 
   // Check if any reads failed and exit early (to try again).
-  if (isnan(ht[0]) || isnan(ht[1]) ) {
+  if ( isnan(currentExternalTemp) ) {
     Serial.println("Failed to read from DHT sensor!");
     return 0;
   }
 
-  Serial.print("Humidity: ");
-  Serial.print(ht[0]);
-  Serial.print(" %\t");
-  Serial.print("Temperature: ");
-  Serial.print(ht[1]);
-  Serial.print(" *C ");
+
+  //  Serial.print("Temperature: ");
+  //  Serial.print(getCurrentExternalTemp());
+  //  Serial.print(" *C ");
+  //  Serial.println("");
+
 
   return 1;
 }
