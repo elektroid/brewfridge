@@ -55,6 +55,9 @@ bool setup_temp() {
   return true;
 
   dht.begin();
+
+  read_temps();
+  read_temps();
 }
 
 void read_temps() {
@@ -79,14 +82,12 @@ void read_internal_temp(DeviceAddress deviceAddress)
   currentInternalTemp = sensors.getTempCByIndex(0);
   Serial.println(currentInternalTemp);
 
-
   if (getCurrentInternalTemp() > maxTemp) {
     maxTemp = getCurrentInternalTemp();
   }
   if (getCurrentInternalTemp() < minTemp) {
     minTemp = getCurrentInternalTemp();
   }
-
 }
 
 
@@ -116,12 +117,10 @@ int external_hum_temp() {
     return 0;
   }
 
-
-  //  Serial.print("Temperature: ");
-  //  Serial.print(getCurrentExternalTemp());
+  Serial.print("ext Temperature: ");
+  Serial.print(getCurrentExternalTemp());
   //  Serial.print(" *C ");
   //  Serial.println("");
-
 
   return 1;
 }

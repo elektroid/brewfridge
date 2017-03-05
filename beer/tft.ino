@@ -1,4 +1,3 @@
-
 #include <Adafruit_GFX.h>    // Core graphics library
 #include <Adafruit_ST7735.h> // Hardware-specific library
 
@@ -15,7 +14,6 @@
 #define TFT_DC     9   //A0 - DC - RS - D/C
 #define BACKLIGHT 3
 #define TFTSWITCH 6
-
 
 // Option 2: use any pins but a little slower!
 #define TFT_SCLK 13   // set these to be whatever pins you like! SPI/SCK
@@ -36,31 +34,45 @@ void setup_tft() {
   digitalWrite(TFTSWITCH, HIGH);
   digitalWrite(BACKLIGHT, HIGH);
 
-
   tft.initR(INITR_BLACKTAB);   // initialize a ST7735S chip, black tab
   Serial.println("Initialized");
   tft.setRotation(180);
   tft.fillScreen(ST7735_BLACK);
   drawFrame();
+  lowPart();
 }
 
 unsigned long lastDraw = millis();
 
 void display() {
-  lowPart();
-  if ((millis() - lastDraw) < 5000) {
+  if ((millis() - lastDraw) < 50) {
     return;
   }
+  miscData();
+  runningTimeAndState();
+
+  if ((millis() - lastDraw) < 60000) {
+    return;
+  }
+  lowPart();
   drawTemp();
   lastDraw = millis();
 }
 
 
-void drawFrame() {
+float previousCurrentTemp = -1;
+void miscData() {
+  if (previousCurrentTemp != getTargetTemp()) {
+    tft.fillRect(0, 0, 128, 30, ST7735_BLACK  );
+    tft.setTextSize(1);
+    tft.setCursor(20, 8);
+    tft.print("target: ");
+    tft.print(getTargetTemp());
+  }
+  previousCurrentTemp = getTargetTemp();
+}
 
-  tft.setCursor(20, 8);
-  tft.print("target: ");
-  tft.print(TARGET_TEMPERATURE);
+void drawFrame() {
 
   // x axis
   tft.drawLine(Y_AXIS_XPOS, X_AXIS_YPOS, Y_AXIS_XPOS + POINTS + 1, X_AXIS_YPOS, ST7735_BLUE);
@@ -112,7 +124,10 @@ void lowPart() {
 
   tft.setCursor(52, 120);
   tft.print(getCurrentInternalTemp()); tft.println("C");
+}
 
+void runningTimeAndState() {
+  tft.fillRect(64, 138, 128, 138, ST7735_BLACK  );
   //misc
   tft.setTextSize(1);
   tft.setCursor(64, 140);
@@ -134,31 +149,19 @@ void lowPart() {
   }
 }
 
-
 uint8_t xoffset = 0;
-uint8_t temps[POINTS];
-uint8_t itemps[POINTS];
+
 void drawTemp() {
 
   xoffset++;
   if (xoffset >= POINTS) {
     tft.fillScreen(ST7735_BLACK);
     drawFrame();
-    for (int i = 0; i < POINTS; i++) {
-      temps[i] = 0;
-      itemps[i] = 0;
-    }
     xoffset = 0;
   }
-  temps[xoffset] = getCurrentExternalTemp();
-  itemps[xoffset] = (int)(getCurrentInternalTemp() + 0.5);
 
-  //for (int i = 0; i <= xoffset; i++) {
-  tft.drawFastVLine(Y_AXIS_XPOS + xoffset + 1, X_AXIS_YPOS - (int)itemps[xoffset] * 2 , (int)itemps[xoffset] * 2, ST7735_MAGENTA);
-  tft.drawRect(Y_AXIS_XPOS + xoffset + 1, X_AXIS_YPOS - (int)temps[xoffset] * 2 , 1, 1, ST7735_WHITE);
-  //}
-
-
+  tft.drawFastVLine(Y_AXIS_XPOS + xoffset + 1, X_AXIS_YPOS - (int)(2 * getCurrentInternalTemp() + 0.5), (int)(2 * getCurrentInternalTemp() + 0.5), ST7735_MAGENTA);
+  tft.drawRect(Y_AXIS_XPOS + xoffset + 1, X_AXIS_YPOS - (int)getCurrentExternalTemp() * 2 , 1, 1, ST7735_WHITE);
 }
 
 void printBattery() {
