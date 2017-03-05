@@ -5,42 +5,26 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-
-#define TARGET_TEMPERATURE 18.0
+#define INIT_TARGET_TEMPERATURE 18.0
 
 void setup(void) {
-  Serial.begin(9600);
+  Serial.begin(115200);
   //Let's make it more random
   randomSeed(analogRead(0));
 
-  setup_fridge();
+  setup_fridge(INIT_TARGET_TEMPERATURE);
   setup_temp();
   setup_tft();
- // setup_log();
-
+  setup_buttons();
+  // setup_log();
 }
-
-
 
 void loop() {
-
   read_temps();
-  handle_fridge( TARGET_TEMPERATURE,  getCurrentInternalTemp());
-
+  handle_fridge( getCurrentInternalTemp());
+  handle_buttons();
   display();
-  delay(1000);
 }
-
-
-
-
-
-
-
-
-
-
-
 
 
 
